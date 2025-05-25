@@ -33,6 +33,9 @@ public:
     settings_path = this->get_parameter("settings_path").as_string();
 
     slam_ = new ORB_SLAM3::System(vocab_path, settings_path, ORB_SLAM3::System::MONOCULAR, true);
+    
+    // disabled viewer :
+    // slam_ = new ORB_SLAM3::System(vocab_path, settings_path, ORB_SLAM3::System::MONOCULAR, false);
 
     sub_ = this->create_subscription<sensor_msgs::msg::Image>(
       "/Mavic_2_PRO/camera/image_color", 10,
@@ -46,28 +49,35 @@ public:
       // TODO: Fix some axis or more is wrong in published tf
       cv::Mat img = cv_bridge::toCvCopy(msg, "bgr8")->image;
       double tstamp = rclcpp::Time(msg->header.stamp).seconds();
-      slam_->TrackMonocular(img, tstamp);
 
       // Publish TF
       Sophus::SE3f Tcw_SE3 = slam_->TrackMonocular(img, tstamp);
       cv::Mat Tcw = ORB_SLAM3::Converter::toCvMat(Tcw_SE3.matrix());
+
       if (!Tcw.empty()) {
         geometry_msgs::msg::TransformStamped tf_msg;
         tf_msg.header.stamp = msg->header.stamp;
         tf_msg.header.frame_id = "world";
         tf_msg.child_frame_id = "camera";
 
-        // Translation
-        tf_msg.transform.translation.x = Tcw.at<float>(0,3);
-        tf_msg.transform.translation.y = Tcw.at<float>(1,3);
-        tf_msg.transform.translation.z = Tcw.at<float>(2,3);
+        // Extract rotation and translation (camera-to-world)
+        cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);
+        cv::Mat tcw = Tcw.rowRange(0,3).col(3);
 
-        // Rotation
-        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t(); // Transpose for world-to-camera
+        // Compute world-to-camera
+        cv::Mat Rwc = Rcw.t();
+        cv::Mat twc = -Rwc * tcw;
+
+        // Set translation
+        tf_msg.transform.translation.x = twc.at<float>(0);
+        tf_msg.transform.translation.y = twc.at<float>(1);
+        tf_msg.transform.translation.z = twc.at<float>(2);
+
+        // Set rotation
         tf2::Matrix3x3 tf2_rot(
-          Rwc.at<float>(0,0), Rwc.at<float>(0,1), Rwc.at<float>(0,2),
-          Rwc.at<float>(1,0), Rwc.at<float>(1,1), Rwc.at<float>(1,2),
-          Rwc.at<float>(2,0), Rwc.at<float>(2,1), Rwc.at<float>(2,2)
+            Rwc.at<float>(0,0), Rwc.at<float>(0,1), Rwc.at<float>(0,2),
+            Rwc.at<float>(1,0), Rwc.at<float>(1,1), Rwc.at<float>(1,2),
+            Rwc.at<float>(2,0), Rwc.at<float>(2,1), Rwc.at<float>(2,2)
         );
         tf2::Quaternion q;
         tf2_rot.getRotation(q);
