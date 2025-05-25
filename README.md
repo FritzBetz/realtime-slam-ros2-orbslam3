@@ -1,5 +1,5 @@
 # realtime-ros2-orbslam3
-
+⁂   ⁂   ⁂
 **No GPS? No problem!**
 A compact ROS 2 Humble node for Ubuntu 22.04 that subscribes to an RGB camera and publishes a `tf` transform based on [ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3).
 Ideal for robotics, drones, and any system needing robust visual localization without GPS. I will make a Raspberry Pi 5 version and install guide soon.
@@ -102,17 +102,13 @@ ros2 run orbslam_cpp orbslam3_localization
 
 ## License
 
-This project is distributed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is distributed under the GNU GENERAL PUBLIC License. See [LICENSE](LICENSE) for details.
 
 ---
 
 **Enjoy robust, real-time visual localization with ROS 2 and ORB-SLAM3!**
 For questions, issues, or contributions, please open an issue or pull request on GitHub.
 
+⁂   ⁂   ⁂
+
 ---
-
-Let me know if you want to add badges, usage examples, or any more customization!
-
-<div style="text-align: center">⁂</div>
-
-[^1]: ORB-SLAM3-u
